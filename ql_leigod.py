@@ -10,7 +10,6 @@ import requests
 import hashlib
 import time
 from utils import get_config
-import json
 
 def hash_password(password):
     md5_hash = hashlib.md5()
