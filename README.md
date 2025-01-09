@@ -1,3 +1,3 @@
 ```
-ql repo https://github.com/Kougami132/AutoHub.git "" "config|notify|utils" "config|notify|utils" "" "py|ini"
+ql repo https://github.com/Kougami132/AutoHub.git "ql_" "" "config|modify|utils" "" "py|ini"
 ```

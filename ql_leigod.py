@@ -136,5 +136,5 @@ session = create_session()
 if login(session, login_data):
     enable, expiry_time = check(session, token_data)
     if enable and pause(session, token_data):
-        from notify import send
+        from modifyNotify import send
         send("雷神自动暂停", "已暂停雷神加速器\n剩余时间: {}".format(expiry_time))
