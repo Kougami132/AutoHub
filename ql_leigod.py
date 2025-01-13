@@ -45,6 +45,16 @@ def create_session():
 
 def login(session, data):
     try:
+        # 网页端接口
+        url = base_url + "/api/auth/login/v1"
+        req = session.post(url, json=data, timeout=20)
+        if req.status_code == 200:
+            print(req.json()['data'])
+            account_token = req.json()["data"]["login_info"]["account_token"]
+            token_data["account_token"] = account_token
+            return True
+            
+        # 移动端接口
         url = base_url + "/wap/login/bind/v1"
         req = session.post(url, json=data, timeout=20)
         if req.status_code == 200:
@@ -138,3 +148,5 @@ if login(session, login_data):
     if enable and pause(session, token_data):
         from modifyNotify import send
         send("雷神自动暂停", "已暂停雷神加速器\n剩余时间: {}".format(expiry_time))
+    else:
+        print("雷神自动暂停", "加速器未开启")
