@@ -41,9 +41,6 @@ def create_session():
         }
     )
     return session
-
-
-def login(session, data):
     try:
         # 网页端接口
         url = base_url + "/api/auth/login/v1"
@@ -106,47 +103,42 @@ def pause(session, data):
         print("An error occurred: {}".format(e))
         return False
 
-
-
-username = get_config("leigod.username")
-password = hash_password(get_config("leigod.password"))
-if not username or not password:
-    print("请在config.ini中配置账号信息")
+# 获取 account_token
+account_token = get_config("leigod.account_token")
+if not account_token:
+    print("请在config.ini中配置 leigod.account_token")
     exit(1)
-base_url = "https://webapi.leigod.com"
-key = "5C5A639C20665313622F51E93E3F2783"  # 密钥
 
-# 获取当前时间戳
-ts = str(int(time.time()))
+base_url = "https://webapi.leigod.com"
 
 token_data = {
-    "account_token": None,
+    "account_token": account_token,
     "lang": "zh_CN",
-    "os_type": 4,
+    "os_type": 4, # os_type 保持，与原 token_data 一致
 }
-
-login_data = {
-    "country_code": 86,
-    "lang": "zh_CN",
-    "password": "{}".format(password),
-    "region_code": 1,
-    "src_channel": "guanwang",
-    "username": "{}".format(username),
-    "ts": ts,
-    "mobile_num": "{}".format(username),
-    "os_type": 4,
-}
-
-# 生成 sign 值
-sign = generate_sign(login_data, key)
-login_data["sign"] = sign
 
 session = create_session()
 
-if login(session, login_data):
-    enable, expiry_time = check(session, token_data)
-    if enable and pause(session, token_data):
-        from modifyNotify import send
-        send("雷神自动暂停", "已暂停雷神加速器\n剩余时间: {}".format(expiry_time))
+# 直接执行检查和暂停逻辑
+enable_to_pause, expiry_time = check(session, token_data) # 'enable_to_pause' is True if pause_status_id == 0
+
+if enable_to_pause:
+    print("加速器当前为活动状态，尝试暂停...")
+    if pause(session, token_data):
+        # 尝试导入 modifyNotify，如果用户环境中有这个模块
+        try:
+            from modifyNotify import send
+            send("雷神自动暂停", "已成功暂停雷神加速器。\n到期时间: {}".format(expiry_time))
+        except ImportError:
+            print("modifyNotify 模块未找到，跳过通知。")
+        print("已成功暂停雷神加速器。到期时间: {}".format(expiry_time))
     else:
-        print("雷神自动暂停", "加速器未开启")
+        print("暂停操作失败。")
+elif expiry_time: # check 成功，但不是可暂停状态 (e.g., 已暂停 or other non-active status)
+    # 检查 expiry_time 是否为空字符串，因为 check 在失败时可能返回 ('', False)
+    if expiry_time: # 确保 expiry_time 有效才打印
+        print("加速器当前非活动状态 (可能已暂停或过期)。无需操作。\n到期时间: {}".format(expiry_time))
+    else: # API 请求可能失败，但 expiry_time 是空字符串，说明 check 返回了 (False, '')
+        print("检查加速器状态成功，但当前非活动状态 (可能已暂停或过期)，且未获取到具体到期时间。无需操作。")
+else: # check 返回 (False, '') 或 check 本身抛出异常后被捕获返回 (False, '')
+    print("检查加速器状态失败，无法执行后续操作。")
